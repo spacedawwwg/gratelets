@@ -1,5 +1,6 @@
 import url from "node:url"
 import path from "node:path"
+import { createRequire } from 'node:module';
 import type { AstroIntegration } from "astro"
 import { PROPAGATED_ASSET_FLAG } from "./node_modules/astro/dist/content/consts.js"
 import "./types.d.ts"
@@ -22,7 +23,12 @@ export default function (_?: Options): AstroIntegration {
                         if (source === "astro:import") { return this.resolve("astro-dynamic-import/runtime/virtual-module.ts") }
                         if (source === "astro-dynamic-import:internal") return source
                     },
-                    load(id) {
+                    load: async (id) => {
+                        const require = createRequire(import.meta.url);
+                        const astroPath = require.resolve('astro');
+                        const astroRoot = path.dirname(astroPath);
+                        const constsPath = path.join(astroRoot, 'dist/content/consts.js');
+                        
                         if (id === "astro-dynamic-import:internal") {
                             return `export const srcDirName = ${JSON.stringify(srcDirName)}\n` +
                             `export const lookupMap = import.meta.glob('/${srcDirName}/components/**/*.astro', { query: { ${PROPAGATED_ASSET_FLAG}: true } })\n`
